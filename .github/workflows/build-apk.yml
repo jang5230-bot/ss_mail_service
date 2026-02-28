@@ -17,15 +17,24 @@ jobs:
       - name: 코드 체크아웃
         uses: actions/checkout@v4
 
-      - name: APK 빌드 (Docker buildozer)
-        uses: ArtemSBulgakov/buildozer-action@v1
+      - name: Android SDK 캐시
+        uses: actions/cache@v4
         with:
-          workdir: android_app
-          buildozer-version: stable
+          path: ~/.buildozer
+          key: buildozer-${{ hashFiles('android_app/buildozer.spec') }}
+          restore-keys: buildozer-
+
+      - name: APK 빌드 (kivy/buildozer Docker)
+        run: |
+          docker run --rm \
+            --volume "${{ github.workspace }}/android_app":/home/user/hostcwd \
+            --volume "$HOME/.buildozer":/home/user/.buildozer \
+            kivy/buildozer:latest \
+            android debug
 
       - name: APK 업로드
         uses: actions/upload-artifact@v4
         with:
           name: gemini-client-apk
-          path: android_app/bin/*.apk
+          path: ${{ github.workspace }}/android_app/bin/*.apk
           retention-days: 30
