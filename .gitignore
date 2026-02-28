@@ -1,0 +1,9 @@
+venv/
+.browser_data/
+*.png
+.env
+__pycache__/
+*.pyc
+config.json
+android_app/.buildozer/
+android_app/bin/

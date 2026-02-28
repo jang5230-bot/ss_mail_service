@@ -1,0 +1,5 @@
+# Android APK 빌드용 (buildozer가 자동 설치)
+# Mac/PC에서 로컬 테스트 시: pip install -r requirements.txt
+kivy==2.3.0
+requests
+certifi
