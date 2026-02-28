@@ -17,24 +17,50 @@ jobs:
       - name: 코드 체크아웃
         uses: actions/checkout@v4
 
+      - name: Python 3.11 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 시스템 의존성 설치
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            git zip unzip openjdk-17-jdk \
+            autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev \
+            cmake libffi-dev libssl-dev build-essential
+
+      - name: buildozer 설치
+        run: pip install buildozer==1.5.0 cython==0.29.37
+
       - name: Android SDK 캐시
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-${{ hashFiles('android_app/buildozer.spec') }}
-          restore-keys: buildozer-
+          key: buildozer-v3-${{ hashFiles('android_app/buildozer.spec') }}
+          restore-keys: buildozer-v3-
 
-      - name: APK 빌드 (kivy/buildozer Docker)
+      - name: Android SDK 라이선스 사전 동의
         run: |
-          docker run --rm \
-            --volume "${{ github.workspace }}/android_app":/home/user/hostcwd \
-            --volume "$HOME/.buildozer":/home/user/.buildozer \
-            kivy/buildozer:latest \
-            android debug
+          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
+          # Android SDK 표준 라이선스 해시값 (공개값)
+          printf "24333f8a63b6825ea9c5514f83c2829b004d1fee\n8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n" \
+            > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          printf "84831b9409646a918e30573bab4c9c91346d8abd\n504667f4c0de7af1a06de9f4b1727b84351f2910\n" \
+            > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+          printf "33b6937b7a73e01ca6f17f429a5f2a2a5ac40a95\n" \
+            > ~/.buildozer/android/platform/android-sdk/licenses/google-gdk-license
+
+      - name: APK 빌드
+        working-directory: android_app
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+        run: buildozer android debug 2>&1
 
       - name: APK 업로드
         uses: actions/upload-artifact@v4
         with:
           name: gemini-client-apk
-          path: ${{ github.workspace }}/android_app/bin/*.apk
+          path: android_app/bin/*.apk
           retention-days: 30
